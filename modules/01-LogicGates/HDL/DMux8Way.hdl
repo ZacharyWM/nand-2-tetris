@@ -1,0 +1,31 @@
+CHIP DMux8Way {
+    IN in, sel[3];
+    OUT a, b, c, d, e, f, g, h;
+
+    PARTS:
+    DMux(in=in,sel=sel[2],a=a0,b=b0);
+
+	DMux(in=a0,sel=sel[1],a=a00,b=b00);
+	DMux(in=b0,sel=sel[1],a=c00,b=d00);
+
+	DMux(in=a00,sel=sel[0],a=a,b=b);
+	DMux(in=b00,sel=sel[0],a=c,b=d);
+	DMux(in=c00,sel=sel[0],a=e,b=f);
+	DMux(in=d00,sel=sel[0],a=g,b=h);
+}
+
+
+/**
+                in
+                 |
+                DMux
+               /    \____________
+              /                  \
+            a0                    b0
+           /  \                  /  \___
+          /    \                /       \
+        a00      b00          c00        d00
+       /  \      /  \         /  \       /  \
+      /    \    /    \       /    \     /    \
+     a      b  c      d     e      f   g      h
+*/
