@@ -1,0 +1,65 @@
+/**
+* ALU (Arithmetic Logic Unit):
+* Computes out = one of the following functions:
+*                0, 1, -1,
+*                x, y, !x, !y, -x, -y,
+*                x + 1, y + 1, x - 1, y - 1,
+*                x + y, x - y, y - x,
+*                x & y, x | y
+* on the 16-bit inputs x, y,
+* according to the input bits zx, nx, zy, ny, f, no.
+* In addition, computes the two output bits:
+* if (out == 0) zr = 1, else zr = 0
+* if (out < 0)  ng = 1, else ng = 0
+*/
+
+// Implementation: Manipulates the x and y inputs
+// and operates on the resulting values, as follows:
+// if (zx == 1) sets x = 0        // 16-bit constant
+// if (nx == 1) sets x = !x       // bitwise not
+// if (zy == 1) sets y = 0        // 16-bit constant
+// if (ny == 1) sets y = !y       // bitwise not
+// if (f == 1)  sets out = x + y  // integer 2's complement addition
+// if (f == 0)  sets out = x & y  // bitwise and
+// if (no == 1) sets out = !out   // bitwise not
+
+CHIP ALU {
+    IN  
+        x[16], y[16],  // 16-bit inputs        
+        zx, // zero the x input?
+        nx, // negate the x input?
+        zy, // zero the y input?
+        ny, // negate the y input?
+        f,  // compute (out = x + y) or (out = x & y)?
+        no; // negate the out output?
+    OUT 
+        out[16], // 16-bit output
+        zr,      // if (out == 0) equals 1, else 0
+        ng;      // if (out < 0)  equals 1, else 0
+
+    PARTS:
+    Mux16(a=x, b[0..15]=false, sel=zx, out=x1);
+    Not16(in=x1, out=notX1);
+    Mux16(a=x1, b=notX1, sel=nx, out=x2);
+
+    Mux16(a=y, b[0..15]=false, sel=zy, out=y1);
+    Not16(in=y1, out=notY1);
+    Mux16(a=y1, b=notY1, sel=ny, out=y2);
+
+    Add16(a=x2, b=y2, out=addXY);
+    And16(a=x2, b=y2, out=andXY);
+    Mux16(a=andXY, b=addXY, sel=f, out=fResult);
+
+    Not16(in=fResult, out=notFResult);
+
+    Mux16(a=fResult, b=notFResult, sel=no, out=fout, out[15]=foutFirst, out[0..7]=foutLeft, out[8..15]=foutRight);
+
+    Or8Way(in=foutLeft, out=notZRa);
+    Or8Way(in=foutRight, out=notZRb);
+    Or(a=notZRa, b=notZRb, out=notZR);
+    Not(in=notZR, out=zr);
+
+    And(a=foutFirst, b=true, out=ng);
+    
+    Or16(a=fout,b[0..15]=false,out=out);
+}
